@@ -13,6 +13,7 @@ import android.app.FragmentManager;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
+import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.util.Log;
 import android.view.View;
@@ -63,6 +64,10 @@ public class MainActivity extends Activity implements
 		mDrawerItems = getResources().getStringArray(R.array.drawer_items);
 		mDrawerList.setAdapter(new ArrayAdapter<String>(this, R.layout.drawer_item, mDrawerItems));
 		mDrawerList.setOnItemClickListener(new DrawerItemClickListener());
+		
+		// Set a custom shadow that overlays the main content when the
+		// drawer opens.
+		mDrawerLayout.setDrawerShadow(R.drawable.drawer_shadow, GravityCompat.START);
 		
 		// Select the default drawer.
 		int selectedDrawerItem = mSharedPreferences.getInt(SELECTED_DRAWER_ITEM_KEY, SELECTED_DRAWER_ITEM_DEFAULT);
