@@ -20,7 +20,8 @@ import android.widget.ListView;
 @EActivity(R.layout.activity_main)
 @OptionsMenu(R.menu.main)
 public class MainActivity extends Activity implements
-		ClientFragment.OnFragmentInteractionListener {
+		ClientFragment.OnFragmentInteractionListener,
+		AboutFragment.OnFragmentInteractionListener {
 	
 	private static final String TAG = "MainActivity";
 	
@@ -52,6 +53,8 @@ public class MainActivity extends Activity implements
 		Fragment fragment = null;
 		if (position == 0) {
 			fragment = new ClientFragment();
+		} else if (position == 3) {
+			fragment = new AboutFragment();
 		} else {
 			Log.e(TAG, "Menu item at " + position + "could not be found");
 			return;
