@@ -16,7 +16,6 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.SharedPreferences;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.Uri;
@@ -184,20 +183,26 @@ public class ClientFragment extends Fragment {
 	}
 	
 	public boolean checkConnectivity() {
+		// Create the WiFi dialog fragment in case we need it.
+		if (mConnectWiFiDialogFragment == null) {
+			mConnectWiFiDialogFragment = new ConnectWiFiDialogFragment();
+		}
+		
 		// Check if we have WiFi connectivity.
 		Log.d(TAG, "Checking WiFi connectivity...");
 		NetworkInfo networkInfo = mConnectivityManager.getNetworkInfo(ConnectivityManager.TYPE_WIFI);
-		if (!networkInfo.isConnected()) {
-			if (mConnectWiFiDialogFragment == null) {
-				mConnectWiFiDialogFragment = new ConnectWiFiDialogFragment();
-			}
-			
+		if (!networkInfo.isConnected()) {	
 			if (!mConnectWiFiDialogFragment.isAdded()) {
 				mConnectWiFiDialogFragment.show(getActivity().getFragmentManager(), "ConnectWiFiDialogFragment");
 			}
 			
 			return false;
 		} else {
+			// WiFi was reconnected, dismiss the dialog automatically.
+			if (mConnectWiFiDialogFragment.isAdded()) {
+				mConnectWiFiDialogFragment.dismiss();
+			}
+			
 			return true;
 		}
 	}
