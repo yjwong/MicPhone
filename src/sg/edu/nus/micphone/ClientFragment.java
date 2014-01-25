@@ -173,6 +173,7 @@ public class ClientFragment extends Fragment {
 			public void onClick(View v) {
 				if (mDiscoverDialogFragment == null) {
 					mDiscoverDialogFragment = new DiscoverDialogFragment();
+					
 				}
 
 				if (!mDiscoverDialogFragment.isAdded()) {
