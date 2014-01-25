@@ -171,7 +171,7 @@ public class MainActivity extends Activity implements
 		Fragment fragment = null;
 		switch(position) {
 		case 0:
-			fragment = new ClientFragment();
+			fragment = new ClientFragment_();
 			break;
 		case 1:
 			fragment = new ServerFragment();
