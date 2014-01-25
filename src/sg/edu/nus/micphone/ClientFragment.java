@@ -16,12 +16,16 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.Uri;
 import android.net.nsd.NsdManager;
-import android.net.nsd.NsdServiceInfo;
 import android.net.nsd.NsdManager.ResolveListener;
+import android.net.nsd.NsdServiceInfo;
+import android.net.rtp.AudioGroup;
+import android.net.rtp.AudioStream;
+import android.net.rtp.RtpStream;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.util.Log;
@@ -52,6 +56,11 @@ public class ClientFragment extends Fragment {
 	private DialogFragment mDiscoverDialogFragment;
 
 	private OnFragmentInteractionListener mListener;
+	
+	private static AudioStream micStream;
+	private static AudioGroup streamGroup;
+	private static String SERVICE_NAME = "KboxServer";
+	private SharedPreferences sharedPreferences;
 
 	/**
 	 * Use this factory method to create a new instance of this fragment using
@@ -139,6 +148,21 @@ public class ClientFragment extends Fragment {
 		
 		// Stop receiving network state changes.
 		getActivity().unregisterReceiver(mConnectivityChangeReceiver);
+	}
+	
+	@Override
+	public void onDestroy()
+	{
+		Log.d(TAG, "App closed");
+		
+		// close service
+		SharedPreferences.Editor preferencesEditor = sharedPreferences.edit();
+		preferencesEditor.putBoolean("active", false);
+		preferencesEditor.commit();
+		
+		// close AudioStream
+		micStream.release();
+		
 	}
 	
 	@AfterViews
@@ -291,7 +315,7 @@ public class ClientFragment extends Fragment {
 						// Service type is the string containing the protocol and
 		                // transport layer for this service.
 						Log.d(TAG, "Unknown service type: " + service.getServiceType());
-					} else if (service.getServiceName().equals("KboxServer")) {
+					} else if (service.getServiceName().equals(SERVICE_NAME)) {
 						mNsdManager.resolveService(service, mResolveListener);
 					}
 				}
@@ -326,6 +350,12 @@ public class ClientFragment extends Fragment {
 					
 					Log.d(TAG, "Port: " + port);
 					Log.d(TAG, "InetAddress: " + host);
+					
+					// Connecting and sending stream
+					micStream.join(streamGroup);
+					micStream.setMode(RtpStream.MODE_SEND_ONLY);
+					micStream.associate(host, port);
+					
 				}
 				
 				@Override
