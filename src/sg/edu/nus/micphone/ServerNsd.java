@@ -63,6 +63,7 @@ public class ServerNsd {
 
 	public void registerService(int port) {
 		NsdServiceInfo serviceInfo = new NsdServiceInfo();
+		Log.d(TAG, "NSD is running at " + port);
 		serviceInfo.setPort(port);
 		serviceInfo.setServiceName(m_ServiceName);
 		serviceInfo.setServiceType(SERVICE_TYPE);

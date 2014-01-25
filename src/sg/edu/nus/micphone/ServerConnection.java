@@ -35,6 +35,7 @@ public class ServerConnection {
 	}
 
 	public void setLocalPort(int port) {
+		
 		m_Port = port;
 	}
 
@@ -66,7 +67,7 @@ public class ServerConnection {
 					setLocalPort(m_ServerSocket.getLocalPort());
 
 					while (!Thread.currentThread().isInterrupted()) {
-						Log.d(TAG, "ServerSocket Created, awaiting connection");
+						Log.d(TAG, "ServerSocket Created, awaiting connection at " + m_ServerSocket.getLocalPort());
 						m_Socket = m_ServerSocket.accept();
 
 						Log.d(TAG, "Connected. Joining AudioGroup");

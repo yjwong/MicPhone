@@ -60,8 +60,8 @@ public class ServerFragment extends Fragment {
 
 	private void startBroadCast() {
 		if (!broadcasting) {
-			mServerNsd.registerService(mServerConn.getLocalPort());
 			mServerConn = new ServerConnection(mOutAudio);
+			mServerNsd.registerService(mServerConn.getLocalPort());
 			broadcasting = true;
 		} else {
 			// TODO if its already broadcasting then do something
