@@ -1,9 +1,10 @@
 package sg.edu.nus.micphone;
 
 import android.app.Activity;
-import android.net.Uri;
-import android.os.Bundle;
 import android.app.Fragment;
+import android.net.Uri;
+import android.net.rtp.AudioGroup;
+import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -17,7 +18,12 @@ import android.view.ViewGroup;
  * 
  */
 public class ServerFragment extends Fragment {
+	private static AudioGroup mOutAudio;
+
 	private OnFragmentInteractionListener mListener;
+	private ServerNsd mServerNsd;
+	private ServerConnection mServerConn;
+	private boolean broadcasting = false;
 
 	/**
 	 * Use this factory method to create a new instance of this fragment using
@@ -38,6 +44,37 @@ public class ServerFragment extends Fragment {
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
+		// Setup AudioGroup for speakers
+		if (ServerFragment.mOutAudio == null) {
+			mOutAudio = new AudioGroup();
+			mOutAudio.setMode(AudioGroup.MODE_MUTED);
+		}
+
+		mServerNsd = new ServerNsd(getActivity());
+		mServerNsd.initializeNsd();
+		mServerNsd.initializeRegistrationListener();
+
+		this.startBroadCast();
+
+	}
+
+	private void startBroadCast() {
+		if (!broadcasting) {
+			mServerNsd.registerService(mServerConn.getLocalPort());
+			mServerConn = new ServerConnection(mOutAudio);
+			broadcasting = true;
+		} else {
+			// TODO if its already broadcasting then do something
+		}
+	}
+
+	private void stopBroadCast() {
+		if (broadcasting) {
+			mServerNsd.tearDown();
+			mServerConn.tearDown();
+		}else{
+			//TODO do we need to do anything its not a valid choice?
+		}
 	}
 
 	@Override
