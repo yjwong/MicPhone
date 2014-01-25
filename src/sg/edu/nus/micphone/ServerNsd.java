@@ -5,7 +5,7 @@ import android.net.nsd.NsdManager;
 import android.net.nsd.NsdServiceInfo;
 import android.util.Log;
 
-/** Call Constructor -> Call initializeNsd -> registerService(int port) */
+/** Call Constructor: ServerNsd(Context context) -> Call initializeNsd -> registerService(int port) */
 public class ServerNsd {
 
 	Context m_Context;
