@@ -99,8 +99,8 @@ public class ClientFragment extends Fragment {
 	}
 	
 	@Override
-	public void onActivityCreated(Bundle savedInstanceState) {
-		super.onActivityCreated(savedInstanceState);
+	public void onViewCreated(View v, Bundle savedInstanceState) {
+		super.onViewCreated(v, savedInstanceState);
 		
 		// Register the buttons to their event handlers.
 		registerButtonEvents();
@@ -339,6 +339,8 @@ public class ClientFragment extends Fragment {
 		                // transport layer for this service.
 						Log.d(TAG, "Unknown service type: " + service.getServiceType());
 					} else if (service.getServiceName().equals(SERVICE_NAME)) {
+						Log.d(TAG, "Detected our own service: " + SERVICE_NAME);
+					} else if (service.getServiceName().startsWith(SERVICE_NAME)) {
 						mNsdManager.resolveService(service, mResolveListener);
 					}
 				}

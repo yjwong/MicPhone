@@ -18,5 +18,7 @@
     <string name="built_during_hnr14">built during HacknRoll 2014</string>
     <string name="drawer_open">Open Navigation Drawer</string>
     <string name="drawer_close">Close Navigation Drawer</string>
+    <string name="start_server">Start Server</string>
+    <string name="stop_server">Stop Server</string>
 
 </resources>
