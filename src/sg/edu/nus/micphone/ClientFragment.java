@@ -59,8 +59,7 @@ public class ClientFragment extends Fragment {
 	
 	private static AudioStream micStream;
 	private static AudioGroup streamGroup;
-	private static String SERVICE_NAME = "KboxServer";
-	private SharedPreferences sharedPreferences;
+	private static String SERVICE_NAME = "KboxService";
 
 	/**
 	 * Use this factory method to create a new instance of this fragment using
@@ -150,20 +149,21 @@ public class ClientFragment extends Fragment {
 		getActivity().unregisterReceiver(mConnectivityChangeReceiver);
 	}
 	
-	@Override
-	public void onDestroy()
-	{
-		Log.d(TAG, "App closed");
+//	@Override
+//	public void onDestroy()
+//	{
+//		Log.d(TAG, "App closed");
 		
 		// close service
-		SharedPreferences.Editor preferencesEditor = sharedPreferences.edit();
-		preferencesEditor.putBoolean("active", false);
-		preferencesEditor.commit();
+		//SharedPreferences.Editor preferencesEditor = sharedPreferences.edit();
+		//preferencesEditor.putBoolean("active", false);
+		//preferencesEditor.commit();
 		
 		// close AudioStream
-		micStream.release();
+//		micStream.release();
 		
-	}
+//	}
+	
 	
 	@AfterViews
 	public void registerButtonEvents() {
