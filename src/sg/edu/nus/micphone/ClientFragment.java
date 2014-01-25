@@ -1,8 +1,10 @@
 package sg.edu.nus.micphone;
 
 import java.net.InetAddress;
+import java.net.SocketException;
 
 import org.androidannotations.annotations.EFragment;
+
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
@@ -53,7 +55,7 @@ public class ClientFragment extends Fragment {
 	private OnFragmentInteractionListener mListener;
 	
 	private static AudioStream mMicStream;
-	private static AudioGroup mSstreamGroup;
+	private static AudioGroup mStreamGroup;
 	private static String SERVICE_NAME = "KboxService";
 
 	/**
@@ -372,11 +374,19 @@ public class ClientFragment extends Fragment {
 					Log.d(TAG, "Port: " + port);
 					Log.d(TAG, "InetAddress: " + host);
 					
-					// Connecting and sending stream
-					mMicStream.join(mSstreamGroup);
-					mMicStream.setMode(RtpStream.MODE_SEND_ONLY);
-					mMicStream.associate(host, port);
-					
+					// Create the microphone stream.
+					try {
+						mMicStream = new AudioStream(host);
+						
+						// Connecting and sending stream.
+						mMicStream.join(mStreamGroup);
+						mMicStream.setMode(RtpStream.MODE_SEND_ONLY);
+						mMicStream.associate(host, port);
+						
+					} catch (SocketException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
 				}
 				
 				@Override
