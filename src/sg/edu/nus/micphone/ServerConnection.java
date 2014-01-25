@@ -22,8 +22,9 @@ public class ServerConnection {
 	private int m_Port = -1;
 
 	public ServerConnection(AudioGroup outAudio) {
-		this.m_outAudio = outAudio;
 		this.m_receiveServer = new ReceivingServer();
+		this.m_outAudio = outAudio;
+
 	}
 
 	public void tearDown() {
@@ -35,7 +36,7 @@ public class ServerConnection {
 	}
 
 	public void setLocalPort(int port) {
-		
+
 		m_Port = port;
 	}
 
@@ -59,15 +60,24 @@ public class ServerConnection {
 
 		class ServerThread implements Runnable {
 
-			@Override
-			public void run() {
-
+			ServerThread() {
 				try {
 					m_ServerSocket = new ServerSocket(0);
 					setLocalPort(m_ServerSocket.getLocalPort());
+				} catch (IOException ioe) {
+					Log.e(TAG, "Error creating ServerSocket: ", ioe);
+					ioe.printStackTrace();
+				}
 
+			}
+
+			@Override
+			public void run() {
+				try {
 					while (!Thread.currentThread().isInterrupted()) {
-						Log.d(TAG, "ServerSocket Created, awaiting connection at " + m_ServerSocket.getLocalPort());
+						Log.d(TAG,
+								"ServerSocket Created, awaiting connection at "
+										+ m_ServerSocket.getLocalPort());
 						m_Socket = m_ServerSocket.accept();
 
 						Log.d(TAG, "Connected. Joining AudioGroup");
@@ -79,9 +89,9 @@ public class ServerConnection {
 						incoming.join(m_outAudio);
 						Log.d(TAG, "Joined AudioGroup");
 					}
-				} catch (IOException e) {
-					Log.e(TAG, "Error creating ServerSocket: ", e);
-					e.printStackTrace();
+				} catch (IOException ioe) {
+					Log.e(TAG, "Error creating AudioStream: ", ioe);
+					ioe.printStackTrace();
 				}
 			}
 		}
