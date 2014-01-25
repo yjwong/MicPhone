@@ -2,7 +2,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:gravity="center_vertical"
+    android:gravity="center|center_vertical|top"
     android:orientation="vertical"
     android:paddingBottom="@dimen/activity_vertical_margin"
     android:paddingLeft="@dimen/activity_horizontal_margin"
@@ -14,7 +14,7 @@
         android:id="@+id/micphone_image"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_gravity="center"
+        android:layout_marginTop="50dp"
         android:adjustViewBounds="true"
         android:importantForAccessibility="no"
         android:maxHeight="150dp"
@@ -29,7 +29,7 @@
         android:gravity="center_horizontal"
         android:text="@string/micphone_version"
         android:textAppearance="?android:attr/textAppearanceLarge"
-        android:textSize="20sp"
+        android:textSize="22sp"
         android:textStyle="bold" />
     
         
@@ -59,6 +59,6 @@
         android:gravity="center_horizontal"
         android:text="@string/micphone_description"
         android:textAppearance="?android:attr/textAppearanceLarge"
-        android:textSize="18sp"/>
+        android:textSize="20sp"/>
 
 </LinearLayout>
