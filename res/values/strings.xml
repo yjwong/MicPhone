@@ -6,14 +6,11 @@
     <string name="welcome_to_micphone">Welcome to MicPhone!</string>
     <string name="get_started">To get started, select a server.</string>
     <string name="select_server">Select Server&#8230;</string>
-    
     <string name="wifi_disconnected">WiFi Disconnected</string>
     <string name="must_connect_wifi">You must connect to a WiFi network to discover available servers.</string>
     <string name="connect">WiFi Settings&#8230;</string>
-    
     <string name="discovering">Discovering&#8230;</string>
-    
     <string name="cancel">Cancel</string>
+    <string name="hello_blank_fragment">Hello blank fragment</string>
 
 </resources>
-
