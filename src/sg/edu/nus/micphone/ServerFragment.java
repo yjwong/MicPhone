@@ -2,6 +2,8 @@ package sg.edu.nus.micphone;
 
 import android.app.Activity;
 import android.app.Fragment;
+import android.content.Context;
+import android.media.AudioManager;
 import android.net.Uri;
 import android.net.rtp.AudioGroup;
 import android.os.Bundle;
@@ -19,13 +21,15 @@ import android.widget.Button;
  * 
  */
 public class ServerFragment extends Fragment {
+
 	private static AudioGroup mOutAudio;
 
+	private AudioManager mAudioManager;
 	private OnFragmentInteractionListener mListener;
 	private ServerNsd mServerNsd;
 	private ServerConnection mServerConn;
 	private boolean broadcasting = false;
-	
+
 	/** Buttons */
 	private Button mButtonStartServer;
 	private Button mButtonStopServer;
@@ -55,6 +59,9 @@ public class ServerFragment extends Fragment {
 			mOutAudio.setMode(AudioGroup.MODE_MUTED);
 		}
 
+		mAudioManager = (AudioManager) getActivity().getSystemService(
+				Context.AUDIO_SERVICE);
+
 		mServerNsd = new ServerNsd(getActivity());
 		mServerNsd.initializeNsd();
 		mServerNsd.initializeRegistrationListener();
@@ -65,6 +72,9 @@ public class ServerFragment extends Fragment {
 		if (!broadcasting) {
 			mServerConn = new ServerConnection(mOutAudio);
 			mServerNsd.registerService(mServerConn.getLocalPort());
+			if (!mAudioManager.isSpeakerphoneOn()) {
+				mAudioManager.setSpeakerphoneOn(true);
+			}
 			broadcasting = true;
 		} else {
 			// TODO if its already broadcasting then do something
@@ -75,8 +85,10 @@ public class ServerFragment extends Fragment {
 		if (broadcasting) {
 			mServerNsd.tearDown();
 			mServerConn.tearDown();
-		}else{
-			//TODO do we need to do anything its not a valid choice?
+			mAudioManager.setSpeakerphoneOn(false);
+			broadcasting = false;
+		} else {
+			// TODO do we need to do anything its not a valid choice?
 		}
 	}
 
@@ -86,13 +98,15 @@ public class ServerFragment extends Fragment {
 		// Inflate the layout for this fragment
 		return inflater.inflate(R.layout.fragment_server, container, false);
 	}
-	
+
 	@Override
 	public void onViewCreated(View v, Bundle savedInstanceState) {
 		// Obtain references to the buttons.
-		mButtonStartServer = (Button) getActivity().findViewById(R.id.start_server);
-		mButtonStopServer = (Button) getActivity().findViewById(R.id.stop_server);
-		
+		mButtonStartServer = (Button) getActivity().findViewById(
+				R.id.start_server);
+		mButtonStopServer = (Button) getActivity().findViewById(
+				R.id.stop_server);
+
 		// Assign appropriate events to buttons.
 		mButtonStartServer.setOnClickListener(new View.OnClickListener() {
 			@Override
@@ -100,7 +114,7 @@ public class ServerFragment extends Fragment {
 				startBroadCast();
 			}
 		});
-		
+
 		mButtonStopServer.setOnClickListener(new View.OnClickListener() {
 			@Override
 			public void onClick(View v) {
@@ -130,6 +144,7 @@ public class ServerFragment extends Fragment {
 	@Override
 	public void onDetach() {
 		super.onDetach();
+		this.stopBroadCast();
 		mListener = null;
 	}
 
