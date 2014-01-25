@@ -2,10 +2,7 @@ package sg.edu.nus.micphone;
 
 import java.net.InetAddress;
 
-import org.androidannotations.annotations.AfterViews;
 import org.androidannotations.annotations.EFragment;
-import org.androidannotations.annotations.ViewById;
-
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
@@ -41,7 +38,7 @@ import android.widget.Button;
  * to create an instance of this fragment.
  * 
  */
-@EFragment(R.layout.fragment_client)
+@EFragment
 public class ClientFragment extends Fragment {
 	private static final String TAG = "ClientFragment";
 	
@@ -50,14 +47,13 @@ public class ClientFragment extends Fragment {
 	private BroadcastReceiver mConnectivityChangeReceiver;
 	private DialogFragment mConnectWiFiDialogFragment;
 	
-	@ViewById(R.id.select_server_button)
-	protected Button mSelectServerButton; 
+	private Button mSelectServerButton; 
 	private DialogFragment mDiscoverDialogFragment;
 
 	private OnFragmentInteractionListener mListener;
 	
-	private static AudioStream micStream;
-	private static AudioGroup streamGroup;
+	private static AudioStream mMicStream;
+	private static AudioGroup mSstreamGroup;
 	private static String SERVICE_NAME = "KboxService";
 
 	/**
@@ -96,8 +92,16 @@ public class ClientFragment extends Fragment {
 	@Override
 	public View onCreateView(LayoutInflater inflater, ViewGroup container,
 			Bundle savedInstanceState) {
-		// Inflate the layout for this fragment
+		// Inflate the layout for this fragment.
 		return inflater.inflate(R.layout.fragment_client, container, false);
+	}
+	
+	@Override
+	public void onActivityCreated(Bundle savedInstanceState) {
+		super.onActivityCreated(savedInstanceState);
+		
+		// Register the buttons to their event handlers.
+		registerButtonEvents();
 	}
 
 	// TODO: Rename method, update argument and hook method into UI event
@@ -140,7 +144,7 @@ public class ClientFragment extends Fragment {
 		super.onPause();
 		
 		// Hide all dialogs.
-		if (mConnectWiFiDialogFragment != null) {
+		if (mConnectWiFiDialogFragment != null && mConnectWiFiDialogFragment.isAdded()) {
 			mConnectWiFiDialogFragment.dismiss();
 		}
 		
@@ -164,15 +168,16 @@ public class ClientFragment extends Fragment {
 //	}
 	
 	
-	@AfterViews
 	public void registerButtonEvents() {
+		// Get a reference to the button.
+		mSelectServerButton = (Button) getActivity().findViewById(R.id.select_server_button);
+		
 		// Select server button.
 		mSelectServerButton.setOnClickListener(new View.OnClickListener() {
 			@Override
 			public void onClick(View v) {
 				if (mDiscoverDialogFragment == null) {
 					mDiscoverDialogFragment = new DiscoverDialogFragment();
-					
 				}
 
 				if (!mDiscoverDialogFragment.isAdded()) {
@@ -182,6 +187,13 @@ public class ClientFragment extends Fragment {
 		});
 	}
 	
+	/**
+	 * Checks the connectivity of the device.
+	 * 
+	 * Since WiFi is required to use the functions of the application,
+	 * we show a dialog that prompts the user to enable WiFi and connect
+	 * to a network.
+	 */
 	public boolean checkConnectivity() {
 		// Create the WiFi dialog fragment in case we need it.
 		if (mConnectWiFiDialogFragment == null) {
@@ -207,7 +219,10 @@ public class ClientFragment extends Fragment {
 		}
 	}
 	
-	
+	/**
+	 * The dialog fragment that asks the user to connect to a WiFi network.
+	 * This dialog fragment is shown when the user is not connected.
+	 */
 	public static class ConnectWiFiDialogFragment extends DialogFragment {
 		@Override
 		public Dialog onCreateDialog(Bundle savedInstanceState) {
@@ -358,9 +373,9 @@ public class ClientFragment extends Fragment {
 					Log.d(TAG, "InetAddress: " + host);
 					
 					// Connecting and sending stream
-					micStream.join(streamGroup);
-					micStream.setMode(RtpStream.MODE_SEND_ONLY);
-					micStream.associate(host, port);
+					mMicStream.join(mSstreamGroup);
+					mMicStream.setMode(RtpStream.MODE_SEND_ONLY);
+					mMicStream.associate(host, port);
 					
 				}
 				
