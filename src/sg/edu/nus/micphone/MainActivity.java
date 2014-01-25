@@ -2,6 +2,7 @@ package sg.edu.nus.micphone;
 
 import org.androidannotations.annotations.EActivity;
 import org.androidannotations.annotations.OptionsMenu;
+
 import android.app.Activity;
 import android.app.Fragment;
 import android.app.FragmentManager;
@@ -10,10 +11,13 @@ import android.os.Bundle;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
+import android.content.res.Configuration;
 import android.support.v4.app.ActionBarDrawerToggle;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -52,6 +56,41 @@ public class MainActivity extends Activity implements
 		
 		// Initialize the drawer.
 		initializeDrawer();
+	}
+	
+	@Override
+	protected void onPostCreate(Bundle savedInstanceState) {
+		super.onPostCreate(savedInstanceState);
+		
+		// Sync the toggle state after onRestoreInstanceState has occurred.
+		mDrawerToggle.syncState();
+	}
+	
+	@Override
+	public void onConfigurationChanged(Configuration newConfig) {
+		super.onConfigurationChanged(newConfig);
+		
+		// Pass any configuration changes to the drawer toggle.
+		mDrawerToggle.onConfigurationChanged(newConfig);
+	}
+	
+	@Override
+	public boolean onPrepareOptionsMenu(Menu menu) {
+		// TODO: If the navigation drawer is open, hide the action items
+		// related to the content view.
+		return super.onPrepareOptionsMenu(menu);
+	}
+	
+	@Override
+	public boolean onOptionsItemSelected(MenuItem item) {
+		// The action bar home/up action should open or close the drawer.
+		// ActionBarDrawerToggle will take care of this.
+		if (mDrawerToggle.onOptionsItemSelected(item)) {
+			return true;
+		}
+		
+		// TODO: Handle other action buttons.
+		return super.onOptionsItemSelected(item);
 	}
 	
 	/**
