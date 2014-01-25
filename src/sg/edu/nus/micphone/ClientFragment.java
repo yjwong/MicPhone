@@ -23,6 +23,7 @@ import android.net.Uri;
 import android.net.nsd.NsdManager;
 import android.net.nsd.NsdManager.ResolveListener;
 import android.net.nsd.NsdServiceInfo;
+import android.net.rtp.AudioGroup;
 import android.net.rtp.AudioStream;
 import android.os.Bundle;
 import android.provider.Settings;
@@ -55,7 +56,9 @@ public class ClientFragment extends Fragment {
 
 	private OnFragmentInteractionListener mListener;
 	
-	private AudioStream micStream;
+	private static AudioStream micStream;
+	private static final int MODE_SEND_ONLY = 1;
+	private static AudioGroup streamGroup;
 	private SharedPreferences sharedPreferences;
 
 	/**
@@ -346,6 +349,12 @@ public class ClientFragment extends Fragment {
 					
 					Log.d(TAG, "Port: " + port);
 					Log.d(TAG, "InetAddress: " + host);
+					
+					// Connecting and sending stream
+					micStream.join(streamGroup);
+					micStream.setMode(MODE_SEND_ONLY);
+					micStream.associate(host, port);
+					
 				}
 				
 				@Override
