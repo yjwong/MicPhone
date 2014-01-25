@@ -8,6 +8,7 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 
 /**
  * A simple {@link android.support.v4.app.Fragment} subclass. Activities that
@@ -24,6 +25,10 @@ public class ServerFragment extends Fragment {
 	private ServerNsd mServerNsd;
 	private ServerConnection mServerConn;
 	private boolean broadcasting = false;
+	
+	/** Buttons */
+	private Button mButtonStartServer;
+	private Button mButtonStopServer;
 
 	/**
 	 * Use this factory method to create a new instance of this fragment using
@@ -54,8 +59,6 @@ public class ServerFragment extends Fragment {
 		mServerNsd.initializeNsd();
 		mServerNsd.initializeRegistrationListener();
 
-		this.startBroadCast();
-
 	}
 
 	private void startBroadCast() {
@@ -82,6 +85,28 @@ public class ServerFragment extends Fragment {
 			Bundle savedInstanceState) {
 		// Inflate the layout for this fragment
 		return inflater.inflate(R.layout.fragment_server, container, false);
+	}
+	
+	@Override
+	public void onViewCreated(View v, Bundle savedInstanceState) {
+		// Obtain references to the buttons.
+		mButtonStartServer = (Button) getActivity().findViewById(R.id.start_server);
+		mButtonStopServer = (Button) getActivity().findViewById(R.id.stop_server);
+		
+		// Assign appropriate events to buttons.
+		mButtonStartServer.setOnClickListener(new View.OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				startBroadCast();
+			}
+		});
+		
+		mButtonStopServer.setOnClickListener(new View.OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				stopBroadCast();
+			}
+		});
 	}
 
 	// TODO: Rename method, update argument and hook method into UI event
