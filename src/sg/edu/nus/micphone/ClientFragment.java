@@ -59,6 +59,7 @@ public class ClientFragment extends Fragment {
 	
 	private static AudioStream micStream;
 	private static AudioGroup streamGroup;
+	private static String SERVICE_NAME = "KboxServer";
 	private SharedPreferences sharedPreferences;
 
 	/**
@@ -314,7 +315,7 @@ public class ClientFragment extends Fragment {
 						// Service type is the string containing the protocol and
 		                // transport layer for this service.
 						Log.d(TAG, "Unknown service type: " + service.getServiceType());
-					} else if (service.getServiceName().equals("KboxServer")) {
+					} else if (service.getServiceName().equals(SERVICE_NAME)) {
 						mNsdManager.resolveService(service, mResolveListener);
 					}
 				}
