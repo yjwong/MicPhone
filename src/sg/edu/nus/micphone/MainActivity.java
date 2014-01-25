@@ -42,6 +42,10 @@ public class MainActivity extends Activity implements
 	private DrawerLayout mDrawerLayout;
 	private ListView mDrawerList;
 	private ActionBarDrawerToggle mDrawerToggle;
+	private int mDrawerSelectedItem;
+	
+	/** Title to show on the ActionBar */
+	private String mActionBarSubtitle;
 	
 	/** Variable for the Android shared preference API */  
 	private SharedPreferences mSharedPreferences;
@@ -114,8 +118,11 @@ public class MainActivity extends Activity implements
 		mDrawerLayout.setDrawerShadow(R.drawable.drawer_shadow, GravityCompat.START);
 		
 		// Select the default drawer.
-		int selectedDrawerItem = mSharedPreferences.getInt(SELECTED_DRAWER_ITEM_KEY, SELECTED_DRAWER_ITEM_DEFAULT);
-		selectDrawerItem(selectedDrawerItem);
+		mDrawerSelectedItem = mSharedPreferences.getInt(SELECTED_DRAWER_ITEM_KEY, SELECTED_DRAWER_ITEM_DEFAULT);
+		selectDrawerItem(mDrawerSelectedItem);
+		
+		// Set the correct subtitle on the action bar.
+		setActionBarSubtitle();
 		
 		// Enables the action bar application icon to open the drawer.
 		getActionBar().setDisplayHomeAsUpEnabled(true);
@@ -126,17 +133,26 @@ public class MainActivity extends Activity implements
 				R.string.drawer_open,
 				R.string.drawer_close) {
 			public void onDrawerClosed(View view) {
-				getActionBar().setTitle("Hello World!");
+				setActionBarSubtitle();
 				invalidateOptionsMenu();
 			}
 			
 			public void onDrawerOpened(View drawerView) {
-				getActionBar().setTitle("Hello World!");
+				getActionBar().setSubtitle(null);
 				invalidateOptionsMenu();
 			}
 		};
 		
 		mDrawerLayout.setDrawerListener(mDrawerToggle);
+	}
+	
+	/**
+	 * Sets the subtitle on the action bar.
+	 */
+	private void setActionBarSubtitle() {
+		// Set the correct title on the action bar.
+		mActionBarSubtitle = mDrawerItems[mDrawerSelectedItem];
+		getActionBar().setSubtitle(mActionBarSubtitle);
 	}
 	
 	/**
@@ -179,6 +195,9 @@ public class MainActivity extends Activity implements
 		Editor editor = mSharedPreferences.edit();
 		editor.putInt(SELECTED_DRAWER_ITEM_KEY, position);
 		editor.apply();
+		
+		// This is used to update the subtitle in the action bar.
+		mDrawerSelectedItem = position;
 	}
 	
 	/**

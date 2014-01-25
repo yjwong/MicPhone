@@ -14,7 +14,7 @@ public class ServerNsd {
 	NsdManager.RegistrationListener m_RegistrationListener;
 
 	public static final String TAG = "ServerNsd";
-	private static final String SERVICE_TYPE = "_rtp._tcp.";
+	private static final String SERVICE_TYPE = "_rtp._udp.";
 	private String m_ServiceName = "KboxService";
 
 	NsdServiceInfo m_Service;
