@@ -1,20 +1,7 @@
 package sg.edu.nus.micphone.client;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.math.BigInteger;
 import java.net.InetAddress;
-import java.net.Socket;
-import java.net.SocketException;
-import java.net.UnknownHostException;
-import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -24,20 +11,18 @@ import javax.jmdns.ServiceListener;
 import org.androidannotations.annotations.Background;
 import org.androidannotations.annotations.EFragment;
 
+import sg.edu.nus.micphone.NetworkUtils;
 import sg.edu.nus.micphone.R;
 
+import android.annotation.TargetApi;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.DialogFragment;
 import android.content.Context;
 import android.content.DialogInterface;
-import android.media.AudioManager;
-import android.net.rtp.AudioCodec;
-import android.net.rtp.AudioGroup;
-import android.net.rtp.AudioStream;
-import android.net.rtp.RtpStream;
 import android.net.wifi.WifiManager;
 import android.net.wifi.WifiManager.MulticastLock;
+import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -63,10 +48,6 @@ public class DiscoverDialogFragment extends DialogFragment {
 	private List<ServiceEvent> mDiscoveredServicesList;
 	private ServiceEventListAdapter mDiscoveredServicesListAdapter;
 	
-	/** Audio management */
-	private AudioStream mMicStream;
-	private AudioGroup mStreamGroup;
-	
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -86,15 +67,19 @@ public class DiscoverDialogFragment extends DialogFragment {
 		AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
 		builder.setTitle(R.string.discovering)
 			.setAdapter(mDiscoveredServicesListAdapter, new DialogInterface.OnClickListener() {
+				@TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR1)
 				@Override
 				public void onClick(DialogInterface dialog, int which) {
 					ServiceEvent ev = mDiscoveredServicesList.get(which);
 					Log.d(TAG, "Selected server: " + ev.getInfo().getHostAddresses()[0]);
 					
 					// Obtain the endpoint port and host.
-					int port = ev.getInfo().getPort();
-					InetAddress host = ev.getInfo().getInetAddresses()[0];
-					beginAudioStream(host, port);
+					final int port = ev.getInfo().getPort();
+					final InetAddress host = ev.getInfo().getInetAddresses()[0];
+					
+					// Pass info back to parent fragment.
+					DiscoverDialogFragmentListener parent = (DiscoverDialogFragmentListener) getActivity();
+					parent.onDiscoverDialogFragmentInteraction(host, port);
 				}
 			});
 		return builder.create();
@@ -133,7 +118,7 @@ public class DiscoverDialogFragment extends DialogFragment {
 	@Background
 	protected void startDiscovery() {
 		try {
-			InetAddress ipAddress = getLocalAddress();
+			InetAddress ipAddress = NetworkUtils.getLocalAddress(getActivity());
 			Log.d(TAG, "Using source IP address: " + ipAddress);
 			
 			// Create a JMDNS instance. 
@@ -144,36 +129,6 @@ public class DiscoverDialogFragment extends DialogFragment {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-	}
-	
-	private InetAddress getLocalAddress() {
-		InetAddress ipAddress = null;
-		if (isWiFiAPEnabled()) {
-			// Hackish assumption! But seems like all have 192.168.43.1.
-			try {
-				ipAddress = InetAddress.getByName("192.168.43.1");
-			} catch (UnknownHostException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-			
-		} else {
-			// We need to obtain the address to broadcast on this interface.
-			int ipAddressInt = mWifiManager.getConnectionInfo().getIpAddress();
-			if (ByteOrder.nativeOrder().equals(ByteOrder.LITTLE_ENDIAN)) {
-				ipAddressInt = Integer.reverseBytes(ipAddressInt);
-			}
-			
-			byte[] ipByteArray = BigInteger.valueOf(ipAddressInt).toByteArray();
-			try {
-				ipAddress = InetAddress.getByAddress(ipByteArray);
-			} catch (UnknownHostException e) {
-				Log.e(TAG, "Unable to get host address");
-				ipAddress = null;
-			}
-		}
-		
-		return ipAddress;
 	}
 	
 	@Background
@@ -244,102 +199,6 @@ public class DiscoverDialogFragment extends DialogFragment {
 		};
 	}
 	
-	/**
-	 * Utility function to check if WiFi AP is enabled on the device.
-	 */
-	private boolean isWiFiAPEnabled() {
-		boolean isWiFiAPEnabled = false;
-		Method[] wmMethods = mWifiManager.getClass().getDeclaredMethods();
-        for (Method method : wmMethods){
-            if(method.getName().equals("isWifiApEnabled")) {  
-                try {
-                	isWiFiAPEnabled = (Boolean) method.invoke(mWifiManager);
-                } catch (IllegalArgumentException e) {
-                  e.printStackTrace();
-                } catch (IllegalAccessException e) {
-                  e.printStackTrace();
-                } catch (InvocationTargetException e) {
-                  e.printStackTrace();
-                }
-            }
-        }
-        
-        return isWiFiAPEnabled;
-	}
-	
-
-	@Background
-	protected void beginAudioStream(InetAddress host, int port) {
-		Log.d(TAG, "beginAudioStream to " + host.getHostAddress() + ":" + port);
-		try {
-			mMicStream = new AudioStream(getLocalAddress());
-			int localPort = mMicStream.getLocalPort();
-			
-			try {
-				// Negotiate the RTP endpoints of the server.
-				Socket socket = new Socket(host, port);
-				OutputStream outputStream = socket.getOutputStream();
-				BufferedWriter outputWriter = new BufferedWriter(new OutputStreamWriter(outputStream));
-				outputWriter.write(Integer.toString(localPort) + "\n");
-				outputWriter.flush();
-				
-				InputStream inputStream = socket.getInputStream();
-				BufferedReader inputReader = new BufferedReader(new InputStreamReader(inputStream));
-				String input = inputReader.readLine();
-				
-				int remotePort = Integer.parseInt(input);
-				socket.close();
-				
-				// Associate with server RTP endpoint.
-				mStreamGroup = new AudioGroup();
-				mStreamGroup.setMode(AudioGroup.MODE_NORMAL);
-				
-				mMicStream.setCodec(AudioCodec.GSM_EFR);
-				mMicStream.setMode(AudioStream.MODE_SEND_ONLY);
-				mMicStream.associate(host, remotePort);
-				mMicStream.join(mStreamGroup);
-				
-				// Print debug information about group.
-				Log.d(TAG, "Local addr: " + mMicStream.getLocalAddress() + ":" + mMicStream.getLocalPort());
-				Log.d(TAG, "Remote addr: " + mMicStream.getRemoteAddress() + ":" + mMicStream.getRemotePort());
-				
-				// Obtain an AudioManager.
-				AudioManager manager = (AudioManager) getActivity().getSystemService(Context.AUDIO_SERVICE);
-				manager.setMicrophoneMute(false);
-				
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-			
-			/*
-			Log.d(TAG, "InetAddress.getLocalHost is " + getLocalAddress());
-			
-			// Create the stream group.
-			mStreamGroup = new AudioGroup();
-			mStreamGroup.setMode(AudioGroup.MODE_NORMAL);
-			
-			// Connecting and sending stream.
-			mMicStream.setMode(RtpStream.MODE_SEND_ONLY);
-			mMicStream.associate(host, port + 1);
-			mMicStream.setCodec(AudioCodec.GSM_EFR);
-			mMicStream.join(mStreamGroup);
-			
-			// Print debug information about group.
-			Log.d(TAG, "Local addr: " + mMicStream.getLocalAddress() + ":" + mMicStream.getLocalPort());
-			Log.d(TAG, "Remote addr: " + mMicStream.getRemoteAddress() + ":" + mMicStream.getRemotePort());
-			
-			// Obtain an AudioManager.
-			AudioManager manager = (AudioManager) getActivity().getSystemService(Context.AUDIO_SERVICE);
-			manager.setSpeakerphoneOn(true);
-			*/
-			
-		} catch (SocketException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-	}
-	
 	public class ServiceEventListAdapter extends ArrayAdapter<ServiceEvent> {
 		private Context mContext;
 		private List<ServiceEvent> mValues;
@@ -377,5 +236,9 @@ public class DiscoverDialogFragment extends DialogFragment {
 					mValues.get(position).getInfo().getPort() + ")");
 			return rowView;
 		}
+	}
+	
+	public interface DiscoverDialogFragmentListener {
+		public void onDiscoverDialogFragmentInteraction(InetAddress host, int port);
 	}
 }

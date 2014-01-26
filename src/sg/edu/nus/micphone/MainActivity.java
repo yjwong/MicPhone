@@ -1,7 +1,21 @@
 package sg.edu.nus.micphone;
 
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.net.InetAddress;
+import java.net.Socket;
+import java.net.SocketException;
+
+import org.androidannotations.annotations.Background;
 import org.androidannotations.annotations.EActivity;
 import org.androidannotations.annotations.OptionsMenu;
+
+import sg.edu.nus.micphone.client.DiscoverDialogFragment.DiscoverDialogFragmentListener;
 
 import android.app.Activity;
 import android.app.Fragment;
@@ -11,7 +25,11 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
 import android.content.res.Configuration;
+import android.media.AudioManager;
 import android.net.Uri;
+import android.net.rtp.AudioCodec;
+import android.net.rtp.AudioGroup;
+import android.net.rtp.AudioStream;
 import android.os.Bundle;
 import android.support.v4.app.ActionBarDrawerToggle;
 import android.support.v4.view.GravityCompat;
@@ -29,7 +47,8 @@ import android.widget.ListView;
 public class MainActivity extends Activity implements
 		ClientFragment.OnFragmentInteractionListener,
 		AboutFragment.OnFragmentInteractionListener,
-		ServerFragment.OnFragmentInteractionListener {
+		ServerFragment.OnFragmentInteractionListener,
+		DiscoverDialogFragmentListener {
 	
 	/** A debug tag used to filter messages from LogCat */
 	private static final String TAG = "MainActivity";
@@ -227,5 +246,56 @@ public class MainActivity extends Activity implements
 	@Override
 	public void onFragmentInteraction(Uri uri) {
 		// TODO Auto-generated method stub		
+	}
+	
+
+	@Background
+	public void onDiscoverDialogFragmentInteraction(InetAddress host, int port) {
+		Log.d(TAG, "beginAudioStream to " + host.getHostAddress() + ":" + port);
+		try {
+			AudioStream micStream = new AudioStream(NetworkUtils.getLocalAddress(this));
+			int localPort = micStream.getLocalPort();
+			
+			try {
+				// Negotiate the RTP endpoints of the server.
+				Socket socket = new Socket(host, port);
+				OutputStream outputStream = socket.getOutputStream();
+				BufferedWriter outputWriter = new BufferedWriter(new OutputStreamWriter(outputStream));
+				outputWriter.write(Integer.toString(localPort) + "\n");
+				outputWriter.flush();
+				
+				InputStream inputStream = socket.getInputStream();
+				BufferedReader inputReader = new BufferedReader(new InputStreamReader(inputStream));
+				String input = inputReader.readLine();
+				
+				int remotePort = Integer.parseInt(input);
+				socket.close();
+				
+				// Associate with server RTP endpoint.
+				AudioGroup streamGroup = new AudioGroup();
+				streamGroup.setMode(AudioGroup.MODE_ECHO_SUPPRESSION);
+				
+				micStream.setCodec(AudioCodec.GSM_EFR);
+				micStream.setMode(AudioStream.MODE_SEND_ONLY);
+				micStream.associate(host, remotePort);
+				micStream.join(streamGroup);
+				
+				// Print debug information about group.
+				Log.d(TAG, "Local addr: " + micStream.getLocalAddress() + ":" + micStream.getLocalPort());
+				Log.d(TAG, "Remote addr: " + micStream.getRemoteAddress() + ":" + micStream.getRemotePort());
+				
+				// Obtain an AudioManager.
+				AudioManager manager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+				manager.setMicrophoneMute(false);
+				
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			
+		} catch (SocketException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 }

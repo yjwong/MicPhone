@@ -35,7 +35,6 @@ public class ServerFragment extends Fragment {
 	private AudioManager mAudioManager;
 	private OnFragmentInteractionListener mListener;
 	private ServerNsd mServerNsd;
-	private ServerConnection mServerConn;
 	private boolean broadcasting = false;
 	
 	private ConnectionHandler mConnectionHandler;
@@ -64,6 +63,7 @@ public class ServerFragment extends Fragment {
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
+		
 		// Setup AudioGroup for speakers
 		if (ServerFragment.mOutAudio == null) {
 			mOutAudio = new AudioGroup();
@@ -81,54 +81,38 @@ public class ServerFragment extends Fragment {
 	
 	@Override
 	public void onDestroy() {
+		super.onDestroy();
 		mServerNsd.tearDown();
-		
-		if (mServerConn != null) {
-			//mServerConn.tearDown();
-		}
 	}
 
 	@Background
 	protected void startBroadCast() {
-		try {
-			mConnectionHandler = new ConnectionHandler(getActivity(), mOutAudio);
-			mConnectionHandlerThread = new Thread(new Runnable() {
-				@Override
-				public void run() {
-					mConnectionHandler.start();
-				}
-			});
-			
-			mConnectionHandlerThread.start();
-			mServerNsd.registerService(mConnectionHandler.getLocalPort());
-			
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		
-		/*
 		if (!broadcasting) {
-			mServerConn = new ServerConnection(mOutAudio);
-			mServerNsd.registerService(mServerConn.getLocalPort());
-			if (!mAudioManager.isSpeakerphoneOn()) {
-				mAudioManager.setSpeakerphoneOn(true);
+			try {
+				mConnectionHandler = new ConnectionHandler(getActivity(), mOutAudio);
+				mConnectionHandlerThread = new Thread(new Runnable() {
+					@Override
+					public void run() {
+						mConnectionHandler.start();
+					}
+				});
+				
+				mConnectionHandlerThread.start();
+				mServerNsd.registerService(mConnectionHandler.getLocalPort());
+				broadcasting = true;
+				
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
 			}
-			broadcasting = true;
-		} else {
-			// TODO if its already broadcasting then do something
 		}
-		*/
 	}
 
 	private void stopBroadCast() {
 		if (broadcasting) {
 			mServerNsd.tearDown();
-			//mServerConn.tearDown();
 			mAudioManager.setSpeakerphoneOn(false);
 			broadcasting = false;
-		} else {
-			// TODO do we need to do anything its not a valid choice?
 		}
 	}
 
