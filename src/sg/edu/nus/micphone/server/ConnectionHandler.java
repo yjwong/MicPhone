@@ -21,6 +21,9 @@ import android.util.Log;
 
 public class ConnectionHandler {
 	private static final String TAG = "ConnectionHandler";
+	
+	private static final AudioCodec CODEC = AudioCodec.PCMA;
+	
 	private ServerSocket mServerSocket;
 	private boolean mRunning = false;
 
@@ -117,7 +120,7 @@ public class ConnectionHandler {
 				mSocket.close();
 
 				// Associate with client RTP endpoint.
-				audioStream.setCodec(AudioCodec.GSM_EFR);
+				audioStream.setCodec(CODEC);
 				audioStream.setMode(AudioStream.MODE_RECEIVE_ONLY);
 				audioStream.associate(remoteAddress, remotePort);
 				audioStream.join(mAudioGroup);
