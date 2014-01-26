@@ -29,6 +29,7 @@ import android.util.Log;
 @EService
 public class ClientService extends Service {
 	private static final String TAG = "ClientService";
+	private static final AudioCodec CODEC = AudioCodec.PCMA;
 	
 	public ClientService() {
 	}
@@ -73,9 +74,9 @@ public class ClientService extends Service {
 				
 				// Associate with server RTP endpoint.
 				AudioGroup streamGroup = new AudioGroup();
-				streamGroup.setMode(AudioGroup.MODE_NORMAL);
+				streamGroup.setMode(AudioGroup.MODE_ECHO_SUPPRESSION);
 				
-				micStream.setCodec(AudioCodec.GSM_EFR);
+				micStream.setCodec(CODEC);
 				micStream.setMode(AudioStream.MODE_SEND_ONLY);
 				micStream.associate(host, remotePort);
 				micStream.join(streamGroup);

@@ -28,9 +28,8 @@ import android.widget.Button;
  */
 @EFragment
 public class ServerFragment extends Fragment {
-
+	
 	private static AudioGroup mOutAudio;
-
 	private AudioManager mAudioManager;
 	private OnFragmentInteractionListener mListener;
 	private ServerNsd mServerNsd;

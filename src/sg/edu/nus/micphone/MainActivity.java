@@ -53,6 +53,9 @@ public class MainActivity extends Activity implements
 	/** A debug tag used to filter messages from LogCat */
 	private static final String TAG = "MainActivity";
 	
+	/** Codec for AudioStream encoding */
+	private static final AudioCodec CODEC = AudioCodec.PCMA;
+	
 	/** Keys and default values for shared preferences */
 	private static final String SELECTED_DRAWER_ITEM_KEY = "selectedDrawerItem";
 	private static final int SELECTED_DRAWER_ITEM_DEFAULT = 0;
@@ -275,7 +278,7 @@ public class MainActivity extends Activity implements
 				AudioGroup streamGroup = new AudioGroup();
 				streamGroup.setMode(AudioGroup.MODE_ECHO_SUPPRESSION);
 				
-				micStream.setCodec(AudioCodec.GSM_EFR);
+				micStream.setCodec(CODEC);
 				micStream.setMode(AudioStream.MODE_SEND_ONLY);
 				micStream.associate(host, remotePort);
 				micStream.join(streamGroup);
