@@ -134,7 +134,10 @@ public class ConnectionHandler {
 				// Obtain an AudioManager.
 				AudioManager manager = (AudioManager) mContext
 						.getSystemService(Context.AUDIO_SERVICE);
+				manager.setMicrophoneMute(true);
 				manager.setSpeakerphoneOn(true);
+				manager.setMode(AudioManager.MODE_IN_COMMUNICATION);
+				
 
 			} catch (IOException e) {
 				// TODO Auto-generated catch block

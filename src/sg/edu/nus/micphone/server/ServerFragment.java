@@ -66,6 +66,7 @@ public class ServerFragment extends Fragment {
 		if (ServerFragment.mOutAudio == null) {
 			mOutAudio = new AudioGroup();
 			mOutAudio.setMode(AudioGroup.MODE_MUTED);
+			
 		}
 
 		mAudioManager = (AudioManager) getActivity().getSystemService(
