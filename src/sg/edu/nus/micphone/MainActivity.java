@@ -16,7 +16,8 @@ import org.androidannotations.annotations.EActivity;
 import org.androidannotations.annotations.OptionsMenu;
 
 import sg.edu.nus.micphone.client.DiscoverDialogFragment.DiscoverDialogFragmentListener;
-
+import sg.edu.nus.micphone.server.ServerFragment;
+import sg.edu.nus.micphone.server.ServerFragment_;
 import android.app.Activity;
 import android.app.Fragment;
 import android.app.FragmentManager;

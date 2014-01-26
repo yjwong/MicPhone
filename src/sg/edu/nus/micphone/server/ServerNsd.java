@@ -1,4 +1,4 @@
-package sg.edu.nus.micphone;
+package sg.edu.nus.micphone.server;
 
 import android.content.Context;
 import android.net.nsd.NsdManager;

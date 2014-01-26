@@ -1,12 +1,11 @@
-package sg.edu.nus.micphone;
+package sg.edu.nus.micphone.server;
 
 import java.io.IOException;
 
 import org.androidannotations.annotations.Background;
 import org.androidannotations.annotations.EFragment;
 
-import sg.edu.nus.micphone.server.ConnectionHandler;
-
+import sg.edu.nus.micphone.R;
 import android.app.Activity;
 import android.app.Fragment;
 import android.content.Context;
@@ -82,7 +81,7 @@ public class ServerFragment extends Fragment {
 	@Override
 	public void onDestroy() {
 		super.onDestroy();
-		mServerNsd.tearDown();
+		this.stopBroadCast();
 	}
 
 	@Background
