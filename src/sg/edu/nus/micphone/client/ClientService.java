@@ -29,7 +29,7 @@ import android.util.Log;
 @EService
 public class ClientService extends Service {
 	private static final String TAG = "ClientService";
-	private static final AudioCodec CODEC = AudioCodec.PCMA;
+	private static final AudioCodec CODEC = AudioCodec.AMR;
 	
 	public ClientService() {
 	}
