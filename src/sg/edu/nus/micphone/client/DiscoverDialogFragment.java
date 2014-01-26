@@ -1,10 +1,17 @@
 package sg.edu.nus.micphone.client;
 
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.math.BigInteger;
 import java.net.InetAddress;
+import java.net.Socket;
 import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.nio.ByteOrder;
@@ -24,6 +31,7 @@ import android.app.Dialog;
 import android.app.DialogFragment;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.media.AudioManager;
 import android.net.rtp.AudioCodec;
 import android.net.rtp.AudioGroup;
 import android.net.rtp.AudioStream;
@@ -115,6 +123,7 @@ public class DiscoverDialogFragment extends DialogFragment {
 		
 		// Clear the list of discovered services.
 		mDiscoveredServicesList.clear();
+		mDiscoveredServicesListAdapter.notifyDataSetChanged();
 		
 		// Release the multicast lock.
 		Log.d(TAG, "Releasing WiFi multicast lock");
@@ -124,26 +133,8 @@ public class DiscoverDialogFragment extends DialogFragment {
 	@Background
 	protected void startDiscovery() {
 		try {
-			InetAddress ipAddress;
-			if (isWiFiAPEnabled()) {
-				// Hackish assumption! But seems like all have 192.168.43.1.
-				ipAddress = InetAddress.getByName("192.168.43.1");
-				
-			} else {
-				// We need to obtain the address to broadcast on this interface.
-				int ipAddressInt = mWifiManager.getConnectionInfo().getIpAddress();
-				if (ByteOrder.nativeOrder().equals(ByteOrder.LITTLE_ENDIAN)) {
-					ipAddressInt = Integer.reverseBytes(ipAddressInt);
-				}
-				
-				byte[] ipByteArray = BigInteger.valueOf(ipAddressInt).toByteArray();
-				try {
-					ipAddress = InetAddress.getByAddress(ipByteArray);
-				} catch (UnknownHostException e) {
-					Log.e(TAG, "Unable to get host address");
-					ipAddress = null;
-				}
-			}
+			InetAddress ipAddress = getLocalAddress();
+			Log.d(TAG, "Using source IP address: " + ipAddress);
 			
 			// Create a JMDNS instance. 
 			mJmDNS = JmDNS.create(ipAddress, SERVICE_NAME);
@@ -153,6 +144,36 @@ public class DiscoverDialogFragment extends DialogFragment {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+	}
+	
+	private InetAddress getLocalAddress() {
+		InetAddress ipAddress = null;
+		if (isWiFiAPEnabled()) {
+			// Hackish assumption! But seems like all have 192.168.43.1.
+			try {
+				ipAddress = InetAddress.getByName("192.168.43.1");
+			} catch (UnknownHostException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			
+		} else {
+			// We need to obtain the address to broadcast on this interface.
+			int ipAddressInt = mWifiManager.getConnectionInfo().getIpAddress();
+			if (ByteOrder.nativeOrder().equals(ByteOrder.LITTLE_ENDIAN)) {
+				ipAddressInt = Integer.reverseBytes(ipAddressInt);
+			}
+			
+			byte[] ipByteArray = BigInteger.valueOf(ipAddressInt).toByteArray();
+			try {
+				ipAddress = InetAddress.getByAddress(ipByteArray);
+			} catch (UnknownHostException e) {
+				Log.e(TAG, "Unable to get host address");
+				ipAddress = null;
+			}
+		}
+		
+		return ipAddress;
 	}
 	
 	@Background
@@ -251,26 +272,67 @@ public class DiscoverDialogFragment extends DialogFragment {
 	protected void beginAudioStream(InetAddress host, int port) {
 		Log.d(TAG, "beginAudioStream to " + host.getHostAddress() + ":" + port);
 		try {
+			mMicStream = new AudioStream(getLocalAddress());
+			int localPort = mMicStream.getLocalPort();
+			
 			try {
-				//mMicStream = new AudioStream(host);
-				//mMicStream = new AudioStream(InetAddress.getLocalHost());
-				mMicStream = new AudioStream(InetAddress.getByName("0.0.0.0"));
-				Log.d(TAG, "InetAddress.getLocalHost is " + InetAddress.getLocalHost());
+				// Negotiate the RTP endpoints of the server.
+				Socket socket = new Socket(host, port);
+				OutputStream outputStream = socket.getOutputStream();
+				BufferedWriter outputWriter = new BufferedWriter(new OutputStreamWriter(outputStream));
+				outputWriter.write(Integer.toString(localPort) + "\n");
+				outputWriter.flush();
 				
-				// Create the stream group.
+				InputStream inputStream = socket.getInputStream();
+				BufferedReader inputReader = new BufferedReader(new InputStreamReader(inputStream));
+				String input = inputReader.readLine();
+				
+				int remotePort = Integer.parseInt(input);
+				socket.close();
+				
+				// Associate with server RTP endpoint.
 				mStreamGroup = new AudioGroup();
 				mStreamGroup.setMode(AudioGroup.MODE_NORMAL);
 				
-				// Connecting and sending stream.
-				mMicStream.setMode(RtpStream.MODE_SEND_ONLY);
-				mMicStream.associate(host, port);
 				mMicStream.setCodec(AudioCodec.GSM_EFR);
+				mMicStream.setMode(AudioStream.MODE_SEND_ONLY);
+				mMicStream.associate(host, remotePort);
 				mMicStream.join(mStreamGroup);
 				
-			} catch (UnknownHostException e) {
+				// Print debug information about group.
+				Log.d(TAG, "Local addr: " + mMicStream.getLocalAddress() + ":" + mMicStream.getLocalPort());
+				Log.d(TAG, "Remote addr: " + mMicStream.getRemoteAddress() + ":" + mMicStream.getRemotePort());
+				
+				// Obtain an AudioManager.
+				AudioManager manager = (AudioManager) getActivity().getSystemService(Context.AUDIO_SERVICE);
+				manager.setMicrophoneMute(false);
+				
+			} catch (IOException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
+			
+			/*
+			Log.d(TAG, "InetAddress.getLocalHost is " + getLocalAddress());
+			
+			// Create the stream group.
+			mStreamGroup = new AudioGroup();
+			mStreamGroup.setMode(AudioGroup.MODE_NORMAL);
+			
+			// Connecting and sending stream.
+			mMicStream.setMode(RtpStream.MODE_SEND_ONLY);
+			mMicStream.associate(host, port + 1);
+			mMicStream.setCodec(AudioCodec.GSM_EFR);
+			mMicStream.join(mStreamGroup);
+			
+			// Print debug information about group.
+			Log.d(TAG, "Local addr: " + mMicStream.getLocalAddress() + ":" + mMicStream.getLocalPort());
+			Log.d(TAG, "Remote addr: " + mMicStream.getRemoteAddress() + ":" + mMicStream.getRemotePort());
+			
+			// Obtain an AudioManager.
+			AudioManager manager = (AudioManager) getActivity().getSystemService(Context.AUDIO_SERVICE);
+			manager.setSpeakerphoneOn(true);
+			*/
 			
 		} catch (SocketException e) {
 			// TODO Auto-generated catch block

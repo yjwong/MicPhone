@@ -1,5 +1,12 @@
 package sg.edu.nus.micphone;
 
+import java.io.IOException;
+
+import org.androidannotations.annotations.Background;
+import org.androidannotations.annotations.EFragment;
+
+import sg.edu.nus.micphone.server.ConnectionHandler;
+
 import android.app.Activity;
 import android.app.Fragment;
 import android.content.Context;
@@ -20,6 +27,7 @@ import android.widget.Button;
  * to create an instance of this fragment.
  * 
  */
+@EFragment
 public class ServerFragment extends Fragment {
 
 	private static AudioGroup mOutAudio;
@@ -29,6 +37,9 @@ public class ServerFragment extends Fragment {
 	private ServerNsd mServerNsd;
 	private ServerConnection mServerConn;
 	private boolean broadcasting = false;
+	
+	private ConnectionHandler mConnectionHandler;
+	private Thread mConnectionHandlerThread;
 
 	/** Buttons */
 	private Button mButtonStartServer;
@@ -67,8 +78,36 @@ public class ServerFragment extends Fragment {
 		mServerNsd.initializeRegistrationListener();
 
 	}
+	
+	@Override
+	public void onDestroy() {
+		mServerNsd.tearDown();
+		
+		if (mServerConn != null) {
+			//mServerConn.tearDown();
+		}
+	}
 
-	private void startBroadCast() {
+	@Background
+	protected void startBroadCast() {
+		try {
+			mConnectionHandler = new ConnectionHandler(getActivity(), mOutAudio);
+			mConnectionHandlerThread = new Thread(new Runnable() {
+				@Override
+				public void run() {
+					mConnectionHandler.start();
+				}
+			});
+			
+			mConnectionHandlerThread.start();
+			mServerNsd.registerService(mConnectionHandler.getLocalPort());
+			
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		/*
 		if (!broadcasting) {
 			mServerConn = new ServerConnection(mOutAudio);
 			mServerNsd.registerService(mServerConn.getLocalPort());
@@ -79,12 +118,13 @@ public class ServerFragment extends Fragment {
 		} else {
 			// TODO if its already broadcasting then do something
 		}
+		*/
 	}
 
 	private void stopBroadCast() {
 		if (broadcasting) {
 			mServerNsd.tearDown();
-			mServerConn.tearDown();
+			//mServerConn.tearDown();
 			mAudioManager.setSpeakerphoneOn(false);
 			broadcasting = false;
 		} else {

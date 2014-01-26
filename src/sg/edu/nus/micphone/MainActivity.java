@@ -174,7 +174,7 @@ public class MainActivity extends Activity implements
 			fragment = new ClientFragment_();
 			break;
 		case 1:
-			fragment = new ServerFragment();
+			fragment = new ServerFragment_();
 			break;
 		case 2:
 			Intent intent = new Intent(this, SettingsActivity.class);

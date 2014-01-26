@@ -24,7 +24,12 @@ public class ServerConnection {
 	private AudioStream mIncoming;
 
 	private int m_Port = -1;
+	
+	public ServerConnection() {
+		
+	}
 
+	/*
 	public ServerConnection(AudioGroup outAudio) {
 
 		this.m_outAudio = outAudio;
@@ -35,7 +40,13 @@ public class ServerConnection {
 			setLocalPort(mIncoming.getLocalPort());
 			mIncoming.setCodec(CODEC);
 			mIncoming.setMode(RtpStream.MODE_RECEIVE_ONLY);
-			//mIncoming.join(m_outAudio);
+			mIncoming.associate(InetAddress.getByName("192.168.137.1"), 10000);
+			mIncoming.join(m_outAudio);
+			
+			// Print debug information about group.
+			Log.d(TAG, "Local addr: " + mIncoming.getLocalAddress() + ":" + mIncoming.getLocalPort());
+			Log.d(TAG, "Remote addr: " + mIncoming.getRemoteAddress() + ":" + mIncoming.getRemotePort());
+			
 			Log.d(TAG, "Joined AudioGroup");
 		} catch (IOException ioe) {
 			Log.e(TAG, "Error creating ServerSocket: ", ioe);
@@ -43,6 +54,7 @@ public class ServerConnection {
 		}
 
 	}
+
 
 	public void tearDown() {
 		mIncoming.join(null);
@@ -77,4 +89,6 @@ public class ServerConnection {
 		}
 		return null;
 	}
+	
+	*/
 }

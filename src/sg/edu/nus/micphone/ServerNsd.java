@@ -8,20 +8,20 @@ import android.util.Log;
 /** Call Constructor: ServerNsd(Context context) -> Call initializeNsd -> registerService(int port) */
 public class ServerNsd {
 
-	Context m_Context;
+	Context mContext;
 
-	NsdManager m_NsdManager;
-	NsdManager.RegistrationListener m_RegistrationListener;
+	NsdManager mNsdManager;
+	NsdManager.RegistrationListener mRegistrationListener;
 
 	public static final String TAG = "ServerNsd";
 	private static final String SERVICE_TYPE = "_rtp._udp.";
-	private String m_ServiceName = "KboxService";
+	private String mServiceName = "KboxService";
 
-	NsdServiceInfo m_Service;
+	NsdServiceInfo mService;
 
 	public ServerNsd(Context context) {
-		m_Context = context;
-		m_NsdManager = (NsdManager) context
+		mContext = context;
+		mNsdManager = (NsdManager) context
 				.getSystemService(Context.NSD_SERVICE);
 	}
 
@@ -30,11 +30,11 @@ public class ServerNsd {
 	}
 
 	public void initializeRegistrationListener() {
-		m_RegistrationListener = new NsdManager.RegistrationListener() {
+		mRegistrationListener = new NsdManager.RegistrationListener() {
 
 			@Override
 			public void onServiceRegistered(NsdServiceInfo info) {
-				m_ServiceName = info.getServiceName();
+				mServiceName = info.getServiceName();
 				
 				Log.d(TAG, info.getServiceName() + " registered.");
 			}
@@ -66,18 +66,18 @@ public class ServerNsd {
 		NsdServiceInfo serviceInfo = new NsdServiceInfo();
 		Log.d(TAG, "NSD is running at " + port);
 		serviceInfo.setPort(port);
-		serviceInfo.setServiceName(m_ServiceName);
+		serviceInfo.setServiceName(mServiceName);
 		serviceInfo.setServiceType(SERVICE_TYPE);
 
-		m_NsdManager.registerService(serviceInfo, NsdManager.PROTOCOL_DNS_SD,
-				m_RegistrationListener);
+		mNsdManager.registerService(serviceInfo, NsdManager.PROTOCOL_DNS_SD,
+				mRegistrationListener);
 	}
 
 	public NsdServiceInfo getChosenServiceInfo() {
-		return m_Service;
+		return mService;
 	}
 
 	public void tearDown() {
-		m_NsdManager.unregisterService(m_RegistrationListener);
+		mNsdManager.unregisterService(mRegistrationListener);
 	}
 }
