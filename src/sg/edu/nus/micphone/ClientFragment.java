@@ -1,31 +1,23 @@
 package sg.edu.nus.micphone;
 
-import java.net.InetAddress;
-import java.net.SocketException;
-
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import org.androidannotations.annotations.EFragment;
 
+import sg.edu.nus.micphone.client.ConnectWiFiDialogFragment_;
+import sg.edu.nus.micphone.client.DiscoverDialogFragment_;
 import android.app.Activity;
-import android.app.AlertDialog;
-import android.app.Dialog;
 import android.app.DialogFragment;
 import android.app.Fragment;
 import android.content.BroadcastReceiver;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.Uri;
-import android.net.nsd.NsdManager;
-import android.net.nsd.NsdManager.ResolveListener;
-import android.net.nsd.NsdServiceInfo;
-import android.net.rtp.AudioGroup;
-import android.net.rtp.AudioStream;
-import android.net.rtp.RtpStream;
+import android.net.wifi.WifiManager;
 import android.os.Bundle;
-import android.provider.Settings;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -44,19 +36,18 @@ import android.widget.Button;
 public class ClientFragment extends Fragment {
 	private static final String TAG = "ClientFragment";
 	
+	/** Connectivity management */
 	private ConnectivityManager mConnectivityManager;
 	private IntentFilter mConnectivityChangeIntentFilter;
 	private BroadcastReceiver mConnectivityChangeReceiver;
 	private DialogFragment mConnectWiFiDialogFragment;
 	
+	/** Server discovery */
 	private Button mSelectServerButton; 
-	private DialogFragment mDiscoverDialogFragment;
+	private static DialogFragment mDiscoverDialogFragment;
 
+	/** Fragment management */
 	private OnFragmentInteractionListener mListener;
-	
-	private static AudioStream mMicStream;
-	private static AudioGroup mStreamGroup;
-	private static String SERVICE_NAME = "KboxService";
 
 	/**
 	 * Use this factory method to create a new instance of this fragment using
@@ -154,22 +145,6 @@ public class ClientFragment extends Fragment {
 		getActivity().unregisterReceiver(mConnectivityChangeReceiver);
 	}
 	
-//	@Override
-//	public void onDestroy()
-//	{
-//		Log.d(TAG, "App closed");
-		
-		// close service
-		//SharedPreferences.Editor preferencesEditor = sharedPreferences.edit();
-		//preferencesEditor.putBoolean("active", false);
-		//preferencesEditor.commit();
-		
-		// close AudioStream
-//		micStream.release();
-		
-//	}
-	
-	
 	public void registerButtonEvents() {
 		// Get a reference to the button.
 		mSelectServerButton = (Button) getActivity().findViewById(R.id.select_server_button);
@@ -179,7 +154,7 @@ public class ClientFragment extends Fragment {
 			@Override
 			public void onClick(View v) {
 				if (mDiscoverDialogFragment == null) {
-					mDiscoverDialogFragment = new DiscoverDialogFragment();
+					mDiscoverDialogFragment = new DiscoverDialogFragment_();
 				}
 
 				if (!mDiscoverDialogFragment.isAdded()) {
@@ -196,16 +171,16 @@ public class ClientFragment extends Fragment {
 	 * we show a dialog that prompts the user to enable WiFi and connect
 	 * to a network.
 	 */
-	public boolean checkConnectivity() {
+	private boolean checkConnectivity() {
 		// Create the WiFi dialog fragment in case we need it.
 		if (mConnectWiFiDialogFragment == null) {
-			mConnectWiFiDialogFragment = new ConnectWiFiDialogFragment();
+			mConnectWiFiDialogFragment = new ConnectWiFiDialogFragment_();
 		}
 		
 		// Check if we have WiFi connectivity.
 		Log.d(TAG, "Checking WiFi connectivity...");
 		NetworkInfo networkInfo = mConnectivityManager.getNetworkInfo(ConnectivityManager.TYPE_WIFI);
-		if (!networkInfo.isConnected()) {	
+		if (!networkInfo.isConnected() && !isWiFiAPEnabled()) {
 			if (!mConnectWiFiDialogFragment.isAdded()) {
 				mConnectWiFiDialogFragment.show(getActivity().getFragmentManager(), "ConnectWiFiDialogFragment");
 			}
@@ -217,187 +192,39 @@ public class ClientFragment extends Fragment {
 				mConnectWiFiDialogFragment.dismiss();
 			}
 			
+			if (isWiFiAPEnabled()) {
+				Log.d(TAG, "WiFi hotspot is enabled");
+			} else {
+				Log.d(TAG, "WiFi is connected");
+			}
+			
 			return true;
 		}
 	}
 	
 	/**
-	 * The dialog fragment that asks the user to connect to a WiFi network.
-	 * This dialog fragment is shown when the user is not connected.
+	 * Utility function to check if WiFi AP is enabled on the device.
 	 */
-	public static class ConnectWiFiDialogFragment extends DialogFragment {
-		@Override
-		public Dialog onCreateDialog(Bundle savedInstanceState) {
-			// Use the builder class for convenient dialog construction.
-			AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
-			builder.setMessage(R.string.must_connect_wifi)
-				.setTitle(R.string.wifi_disconnected)
-				.setPositiveButton(R.string.connect, new DialogInterface.OnClickListener() {
-					@Override
-					public void onClick(DialogInterface dialog, int which) {
-						Intent intent = new Intent(Settings.ACTION_WIFI_SETTINGS);
-						startActivity(intent);
-					}
-				})
-				.setNegativeButton(R.string.cancel, new DialogInterface.OnClickListener() {
-					@Override
-					public void onClick(DialogInterface dialog, int which) {
-						getActivity().finish();
-					}
-				});
-			
-			return builder.create();
-		}
+	private boolean isWiFiAPEnabled() {
+		boolean isWiFiAPEnabled = false;
+		WifiManager wifi = (WifiManager) getActivity().getSystemService(Context.WIFI_SERVICE);
 		
-		@Override
-		public void onCancel(DialogInterface dialog) {
-			getActivity().finish();
-		}
-	}
-	
-	public static class DiscoverDialogFragment extends DialogFragment {
-		private static final String TAG = "DiscoverDialogFragment";
-		private static final String SERVICE_TYPE = "_rtp._udp.";
-		
-		private NsdManager mNsdManager;
-		private NsdManager.DiscoveryListener mDiscoveryListener;
-		private NsdServiceInfo mService;
-		private ResolveListener mResolveListener;
-		private boolean mPerformingDiscovery = false;
-		
-		@Override
-		public void onCreate(Bundle savedInstanceState) {
-			super.onCreate(savedInstanceState);
-			
-			// Obtain the Network Service Discovery Manager.
-			mNsdManager = (NsdManager) getActivity().getSystemService(Context.NSD_SERVICE);
-			
-			// Create the discovery listener.
-			initializeDiscoveryListener();
-			initializeResolveListener();
-			startDiscovery();
-		}
-		
-		@Override
-		public Dialog onCreateDialog(Bundle savedInstanceState) {
-			// Use the builder class for convenient dialog construction.
-			AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
-			builder.setTitle(R.string.discovering);
-			return builder.create();
-		}
-		
-		@Override
-		public void onDismiss(DialogInterface dialog) {
-			super.onDismiss(dialog);
-			stopDiscovery();
-		}
-		
-		public void startDiscovery() {
-			// Begin to discover network services.
-			mNsdManager.discoverServices(SERVICE_TYPE, NsdManager.PROTOCOL_DNS_SD, mDiscoveryListener);
-			mPerformingDiscovery = true;
-		}
-		
-		public void stopDiscovery() {
-			if (mPerformingDiscovery) {
-				mNsdManager.stopServiceDiscovery(mDiscoveryListener);
-				mPerformingDiscovery = false;
-			}
-		}
-		
-		public void initializeDiscoveryListener() {
-			Log.d(TAG, "Initializing discovery listener");
-			
-			// Instantiate a new DiscoveryListener.
-			mDiscoveryListener = new NsdManager.DiscoveryListener() {
-				
-				@Override
-				public void onStopDiscoveryFailed(String serviceType, int errorCode) {
-					Log.e(TAG, "Discovery failed: Error code: " + errorCode);
-					mNsdManager.stopServiceDiscovery(this);
-				}
-				
-				@Override
-				public void onStartDiscoveryFailed(String serviceType, int errorCode) {
-					Log.e(TAG, "Discovery failed: Error code: " + errorCode);
-					mNsdManager.stopServiceDiscovery(this);
-				}
-				
-				@Override
-				public void onServiceLost(NsdServiceInfo service) {
-					// When the network service is no longer available.
-					// Internal bookkeeping code here.
-					Log.e(TAG, "Service lost: " + service);
-				}
-				
-				@Override
-				public void onServiceFound(NsdServiceInfo service) {
-					// A service was found!  Do something with it.
-					Log.d(TAG, "Service discovery success: " + service);
-					if (!service.getServiceType().equals(SERVICE_TYPE)) {
-						// Service type is the string containing the protocol and
-		                // transport layer for this service.
-						Log.d(TAG, "Unknown service type: " + service.getServiceType());
-					} else if (service.getServiceName().equals(SERVICE_NAME)) {
-						Log.d(TAG, "Detected our own service: " + SERVICE_NAME);
-					} else if (service.getServiceName().startsWith(SERVICE_NAME)) {
-						mNsdManager.resolveService(service, mResolveListener);
-					}
-				}
-				
-				@Override
-				public void onDiscoveryStopped(String serviceType) {
-					Log.i(TAG, "Discovery stopped: " + serviceType);
-				}
-				
-				// Called as soon as service discovery begins.
-				@Override
-				public void onDiscoveryStarted(String regType) {
-					Log.d(TAG, "Service discovery started");
-				}
-			};
-		}
-		
-		
-		public void initializeResolveListener() {
-			Log.d(TAG, "Initializing resolve listener");
-			
-			// Instantiate a new ResolveListener.
-			mResolveListener = new NsdManager.ResolveListener() {
-				
-				@Override
-				public void onServiceResolved(NsdServiceInfo serviceInfo) {
-					Log.e(TAG, "Resolve succeeded: " + serviceInfo);
-					
-					mService = serviceInfo;
-					int port = mService.getPort();
-					InetAddress host = mService.getHost();
-					
-					Log.d(TAG, "Port: " + port);
-					Log.d(TAG, "InetAddress: " + host);
-					
-					// Create the microphone stream.
-					try {
-						mMicStream = new AudioStream(host);
-						
-						// Connecting and sending stream.
-						mMicStream.join(mStreamGroup);
-						mMicStream.setMode(RtpStream.MODE_SEND_ONLY);
-						mMicStream.associate(host, port);
-						
-					} catch (SocketException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
-				}
-				
-				@Override
-				public void onResolveFailed(NsdServiceInfo serviceInfo, int errorCode) {
-					// Called when the resolve fails. Use the error code to debug.
-					Log.e(TAG, "Resolve failed: Error code: " + errorCode);
-				}
-			};
-		}
+		Method[] wmMethods = wifi.getClass().getDeclaredMethods();
+        for (Method method : wmMethods){
+            if(method.getName().equals("isWifiApEnabled")) {  
+                try {
+                	isWiFiAPEnabled = (Boolean) method.invoke(wifi);
+                } catch (IllegalArgumentException e) {
+                  e.printStackTrace();
+                } catch (IllegalAccessException e) {
+                  e.printStackTrace();
+                } catch (InvocationTargetException e) {
+                  e.printStackTrace();
+                }
+            }
+        }
+        
+        return isWiFiAPEnabled;
 	}
 
 	/**

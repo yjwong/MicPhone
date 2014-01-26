@@ -1,8 +1,12 @@
 package sg.edu.nus.micphone;
 
 import java.io.IOException;
-import java.net.ServerSocket;
-import java.net.Socket;
+import java.net.InetAddress;
+import java.net.InterfaceAddress;
+import java.net.NetworkInterface;
+import java.net.SocketException;
+import java.util.Collections;
+import java.util.List;
 
 import android.net.rtp.AudioCodec;
 import android.net.rtp.AudioGroup;
@@ -17,18 +21,31 @@ public class ServerConnection {
 	private static final AudioCodec CODEC = AudioCodec.GSM_EFR;
 
 	private AudioGroup m_outAudio;
-	private Socket m_Socket;
-	private ReceivingServer m_receiveServer;
+	private AudioStream mIncoming;
+
 	private int m_Port = -1;
 
 	public ServerConnection(AudioGroup outAudio) {
-		this.m_receiveServer = new ReceivingServer();
+
 		this.m_outAudio = outAudio;
+
+		try {
+			InetAddress inet = this.getInetAddress();
+			mIncoming = new AudioStream(inet);
+			setLocalPort(mIncoming.getLocalPort());
+			mIncoming.setCodec(CODEC);
+			mIncoming.setMode(RtpStream.MODE_RECEIVE_ONLY);
+			//mIncoming.join(m_outAudio);
+			Log.d(TAG, "Joined AudioGroup");
+		} catch (IOException ioe) {
+			Log.e(TAG, "Error creating ServerSocket: ", ioe);
+			ioe.printStackTrace();
+		}
 
 	}
 
 	public void tearDown() {
-		m_receiveServer.tearDown();
+		mIncoming.join(null);
 	}
 
 	public int getLocalPort() {
@@ -36,64 +53,28 @@ public class ServerConnection {
 	}
 
 	public void setLocalPort(int port) {
-
 		m_Port = port;
 	}
 
-	private class ReceivingServer {
-		ServerSocket m_ServerSocket = null;
-		Thread m_Thread = null;
-
-		public ReceivingServer() {
-			m_Thread = new Thread(new ServerThread());
-			m_Thread.start();
-		}
-
-		public void tearDown() {
-			m_Thread.interrupt();
-			try {
-				m_ServerSocket.close();
-			} catch (IOException ioe) {
-				Log.e(TAG, "Error when closing server socket.");
-			}
-		}
-
-		class ServerThread implements Runnable {
-
-			ServerThread() {
-				try {
-					m_ServerSocket = new ServerSocket(0);
-					setLocalPort(m_ServerSocket.getLocalPort());
-				} catch (IOException ioe) {
-					Log.e(TAG, "Error creating ServerSocket: ", ioe);
-					ioe.printStackTrace();
-				}
-
-			}
-
-			@Override
-			public void run() {
-				try {
-					while (!Thread.currentThread().isInterrupted()) {
-						Log.d(TAG,
-								"ServerSocket Created, awaiting connection at "
-										+ m_ServerSocket.getLocalPort());
-						m_Socket = m_ServerSocket.accept();
-
-						Log.d(TAG, "Connected. Joining AudioGroup");
-
-						AudioStream incoming = new AudioStream(
-								m_Socket.getInetAddress());
-						incoming.setCodec(CODEC);
-						incoming.setMode(RtpStream.MODE_RECEIVE_ONLY);
-						incoming.join(m_outAudio);
-						Log.d(TAG, "Joined AudioGroup");
+	private InetAddress getInetAddress() {
+		try {
+			List<NetworkInterface> netInt = Collections.list(NetworkInterface
+					.getNetworkInterfaces());
+			for (NetworkInterface net : netInt) {
+				if (net.isUp() && !net.isLoopback()) {
+					List<InterfaceAddress> inetInt = net
+							.getInterfaceAddresses();
+					for (InterfaceAddress inet : inetInt) {
+						if (inet.getAddress() != null
+								&& inet.getAddress().toString().contains(".")) {
+							return inet.getAddress();
+						}
 					}
-				} catch (IOException ioe) {
-					Log.e(TAG, "Error creating AudioStream: ", ioe);
-					ioe.printStackTrace();
 				}
 			}
+		} catch (SocketException se) {
+			se.printStackTrace();
 		}
+		return null;
 	}
 }

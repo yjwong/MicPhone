@@ -35,26 +35,27 @@ public class ServerNsd {
 			@Override
 			public void onServiceRegistered(NsdServiceInfo info) {
 				m_ServiceName = info.getServiceName();
-				Log.d(TAG, info.getServiceName() + "registered.");
+				
+				Log.d(TAG, info.getServiceName() + " registered.");
 			}
 
 			@Override
 			public void onRegistrationFailed(NsdServiceInfo info, int errorCode) {
 				Log.e(TAG, info.getServiceName()
-						+ "registration failed. Error Code : " + errorCode
-						+ ".");
+						+ " registration failed. Error Code : " + errorCode
+						+ " .");
 			}
 
 			@Override
 			public void onServiceUnregistered(NsdServiceInfo info) {
-				Log.d(TAG, info.getServiceName() + "unregistered.");
+				Log.d(TAG, info.getServiceName() + " unregistered.");
 			}
 
 			@Override
 			public void onUnregistrationFailed(NsdServiceInfo info,
 					int errorCode) {
 				Log.e(TAG, info.getServiceName()
-						+ "unregistration failed. Error Code : " + errorCode
+						+ " unregistration failed. Error Code : " + errorCode
 						+ ".");
 			}
 
