@@ -5,7 +5,7 @@
     android:versionName="1.0" >
 
     <uses-sdk
-        android:minSdkVersion="16"
+        android:minSdkVersion="17"
         android:targetSdkVersion="19" />
 
     <uses-permission android:name="android.permission.INTERNET" />
@@ -36,7 +36,7 @@
         <service
             android:name="sg.edu.nus.micphone.client.ClientService_"
             android:enabled="true"
-            android:exported="false" >
+            android:exported="true" >
         </service>
     </application>
 

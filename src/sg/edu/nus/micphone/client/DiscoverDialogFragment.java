@@ -13,16 +13,14 @@ import org.androidannotations.annotations.EFragment;
 
 import sg.edu.nus.micphone.NetworkUtils;
 import sg.edu.nus.micphone.R;
-
-import android.annotation.TargetApi;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.DialogFragment;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.net.wifi.WifiManager;
 import android.net.wifi.WifiManager.MulticastLock;
-import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -67,7 +65,6 @@ public class DiscoverDialogFragment extends DialogFragment {
 		AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
 		builder.setTitle(R.string.discovering)
 			.setAdapter(mDiscoveredServicesListAdapter, new DialogInterface.OnClickListener() {
-				@TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR1)
 				@Override
 				public void onClick(DialogInterface dialog, int which) {
 					ServiceEvent ev = mDiscoveredServicesList.get(which);
@@ -77,9 +74,14 @@ public class DiscoverDialogFragment extends DialogFragment {
 					final int port = ev.getInfo().getPort();
 					final InetAddress host = ev.getInfo().getInetAddresses()[0];
 					
+					Intent intent = new Intent(getActivity(), ClientService_.class);
+					intent.putExtra("host", host);
+					intent.putExtra("port", port);
+					getActivity().startService(intent);
+					
 					// Pass info back to parent fragment.
-					DiscoverDialogFragmentListener parent = (DiscoverDialogFragmentListener) getActivity();
-					parent.onDiscoverDialogFragmentInteraction(host, port);
+					// DiscoverDialogFragmentListener parent = (DiscoverDialogFragmentListener) getActivity();
+					// parent.onDiscoverDialogFragmentInteraction(host, port);
 				}
 			});
 		return builder.create();

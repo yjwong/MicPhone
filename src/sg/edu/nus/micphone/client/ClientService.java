@@ -23,7 +23,6 @@ import android.media.AudioManager;
 import android.net.rtp.AudioCodec;
 import android.net.rtp.AudioGroup;
 import android.net.rtp.AudioStream;
-import android.os.Binder;
 import android.os.IBinder;
 import android.util.Log;
 
@@ -31,21 +30,22 @@ import android.util.Log;
 public class ClientService extends Service {
 	private static final String TAG = "ClientService";
 	
-	/** Binder given to clients */
-	private final IBinder mBinder = new ClientServiceBinder();
-	
 	public ClientService() {
+	}
+	
+	@Override
+	public int onStartCommand(Intent intent, int flags, int startId) {
+		Log.d(TAG, "onStartCommand");
+		InetAddress host = (InetAddress) intent.getSerializableExtra("host");
+		int port = intent.getIntExtra("port", -1);
+		beginAudioStream(host, port);
+		
+		return super.onStartCommand(intent, flags, startId);
 	}
 
 	@Override
 	public IBinder onBind(Intent intent) {
-		return mBinder;
-	}
-	
-	public class ClientServiceBinder extends Binder {
-		ClientService getService() {
-			return ClientService.this;
-		}
+		return null;
 	}
 	
 	/** Methods for clients */
