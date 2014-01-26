@@ -22,7 +22,7 @@ import android.util.Log;
 public class ConnectionHandler {
 	private static final String TAG = "ConnectionHandler";
 	
-	private static final AudioCodec CODEC = AudioCodec.AMR;
+	private static final AudioCodec CODEC = AudioCodec.GSM_EFR;
 	
 	private ServerSocket mServerSocket;
 	private boolean mRunning = false;

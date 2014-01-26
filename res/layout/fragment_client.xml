@@ -18,6 +18,7 @@
         android:src="@drawable/main" />
 
     <TextView
+        android:id="@+id/welcome_to_micphone"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
@@ -29,6 +30,7 @@
         android:textStyle="bold" />
 
     <TextView
+        android:id="@+id/get_started"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:fontFamily="sans-serif-condensed"
@@ -46,5 +48,19 @@
         android:paddingLeft="32dp"
         android:paddingRight="32dp"
         android:text="@string/select_server" />
+    
+    <!-- Shown only when the server is running -->
+    <TextView
+        android:id="@+id/you_are_connected"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:fontFamily="sans-serif-condensed"
+        android:gravity="center_horizontal"
+        android:text="@string/you_are_connected"
+        android:textAppearance="?android:attr/textAppearanceLarge"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        android:visibility="gone" />
 
 </LinearLayout>

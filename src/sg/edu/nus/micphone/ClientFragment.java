@@ -4,9 +4,12 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import org.androidannotations.annotations.EFragment;
 
+import sg.edu.nus.micphone.client.ClientService_;
 import sg.edu.nus.micphone.client.ConnectWiFiDialogFragment_;
 import sg.edu.nus.micphone.client.DiscoverDialogFragment_;
 import android.app.Activity;
+import android.app.ActivityManager;
+import android.app.ActivityManager.RunningServiceInfo;
 import android.app.DialogFragment;
 import android.app.Fragment;
 import android.content.BroadcastReceiver;
@@ -130,6 +133,15 @@ public class ClientFragment extends Fragment {
 		
 		// Resume receiving network state changes.
 		getActivity().registerReceiver(mConnectivityChangeReceiver, mConnectivityChangeIntentFilter);
+		
+		// Check if client service is running. If it is running, show the
+		// server name and hide the select server button.
+		if (isClientServiceRunning()) {
+			Log.d(TAG, "Client service is running");
+			onClientServiceStarted();
+		} else {
+			onClientServiceStopped();
+		}
 	}
 	
 	@Override
@@ -143,6 +155,34 @@ public class ClientFragment extends Fragment {
 		
 		// Stop receiving network state changes.
 		getActivity().unregisterReceiver(mConnectivityChangeReceiver);
+	}
+	
+	private boolean isClientServiceRunning() {
+		// Check if service is running.
+		ActivityManager manager = (ActivityManager) getActivity().getSystemService(Context.ACTIVITY_SERVICE);
+		for (RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
+			if (ClientService_.class.getName().equals(service.service.getClassName())) {
+				return true;
+			}
+		}
+		
+		return false;
+	}
+	
+	private void onClientServiceStarted() {
+		getActivity().findViewById(R.id.welcome_to_micphone).setVisibility(View.GONE);
+		getActivity().findViewById(R.id.get_started).setVisibility(View.GONE);
+		getActivity().findViewById(R.id.select_server_button).setVisibility(View.GONE);
+		
+		getActivity().findViewById(R.id.you_are_connected).setVisibility(View.VISIBLE);
+	}
+	
+	private void onClientServiceStopped() {
+		getActivity().findViewById(R.id.welcome_to_micphone).setVisibility(View.VISIBLE);
+		getActivity().findViewById(R.id.get_started).setVisibility(View.VISIBLE);
+		getActivity().findViewById(R.id.select_server_button).setVisibility(View.VISIBLE);
+		
+		getActivity().findViewById(R.id.you_are_connected).setVisibility(View.GONE);
 	}
 	
 	public void registerButtonEvents() {

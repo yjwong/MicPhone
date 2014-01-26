@@ -23,13 +23,18 @@ import android.media.AudioManager;
 import android.net.rtp.AudioCodec;
 import android.net.rtp.AudioGroup;
 import android.net.rtp.AudioStream;
+import android.os.Binder;
 import android.os.IBinder;
 import android.util.Log;
 
 @EService
 public class ClientService extends Service {
 	private static final String TAG = "ClientService";
-	private static final AudioCodec CODEC = AudioCodec.AMR;
+	private static final AudioCodec CODEC = AudioCodec.GSM_EFR;
+	private final IBinder mBinder = new ClientBinder();
+	
+	private InetAddress mHost;
+	private int mPort;
 	
 	public ClientService() {
 	}
@@ -37,29 +42,29 @@ public class ClientService extends Service {
 	@Override
 	public int onStartCommand(Intent intent, int flags, int startId) {
 		Log.d(TAG, "onStartCommand");
-		InetAddress host = (InetAddress) intent.getSerializableExtra("host");
-		int port = intent.getIntExtra("port", -1);
-		beginAudioStream(host, port);
+		mHost = (InetAddress) intent.getSerializableExtra("host");
+		mPort = intent.getIntExtra("port", -1);
+		beginAudioStream();
 		
 		return super.onStartCommand(intent, flags, startId);
 	}
 
 	@Override
 	public IBinder onBind(Intent intent) {
-		return null;
+		return mBinder;
 	}
 	
 	/** Methods for clients */
 	@Background
-	protected void beginAudioStream(InetAddress host, int port) {
-		Log.d(TAG, "beginAudioStream to " + host.getHostAddress() + ":" + port);
+	protected void beginAudioStream() {
+		Log.d(TAG, "beginAudioStream to " + mHost.getHostAddress() + ":" + mPort);
 		try {
 			AudioStream micStream = new AudioStream(NetworkUtils.getLocalAddress(this));
 			int localPort = micStream.getLocalPort();
 			
 			try {
 				// Negotiate the RTP endpoints of the server.
-				Socket socket = new Socket(host, port);
+				Socket socket = new Socket(mHost, mPort);
 				OutputStream outputStream = socket.getOutputStream();
 				BufferedWriter outputWriter = new BufferedWriter(new OutputStreamWriter(outputStream));
 				outputWriter.write(Integer.toString(localPort) + "\n");
@@ -79,7 +84,7 @@ public class ClientService extends Service {
 				
 				micStream.setCodec(CODEC);
 				micStream.setMode(AudioStream.MODE_SEND_ONLY);
-				micStream.associate(host, remotePort);
+				micStream.associate(mHost, remotePort);
 				micStream.join(streamGroup);
 				
 				// Print debug information about group.
@@ -98,6 +103,20 @@ public class ClientService extends Service {
 		} catch (SocketException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
+		}
+	}
+	
+	public InetAddress getHost() {
+		return mHost;
+	}
+	
+	public int getPort() {
+		return mPort;
+	}
+	
+	public class ClientBinder extends Binder {
+		ClientService getService() {
+			return ClientService.this;
 		}
 	}
 }
