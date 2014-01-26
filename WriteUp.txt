@@ -1,0 +1,3 @@
+The Burden MicPhone
+
+To overcome the problem of having insufficient microphone whenever we attempt to sing karaoke with our friends, The Burden MicPhone seek to solve this problem by turning our handphone into the microphone that we need. A device will serves as a server while constantly receiving audio streamed from the other handphone of user via WiFi, thus eliminating the need for an actual microphone.
