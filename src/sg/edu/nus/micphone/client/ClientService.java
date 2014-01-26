@@ -74,7 +74,8 @@ public class ClientService extends Service {
 				
 				// Associate with server RTP endpoint.
 				AudioGroup streamGroup = new AudioGroup();
-				streamGroup.setMode(AudioGroup.MODE_ECHO_SUPPRESSION);
+				//streamGroup.setMode(AudioGroup.MODE_ECHO_SUPPRESSION);
+				streamGroup.setMode(AudioGroup.MODE_NORMAL);
 				
 				micStream.setCodec(CODEC);
 				micStream.setMode(AudioStream.MODE_SEND_ONLY);
